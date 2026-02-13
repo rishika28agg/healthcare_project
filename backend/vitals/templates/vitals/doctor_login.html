@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Doctor Login</title>
+
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: linear-gradient(135deg, #0d6efd, #4facfe);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .login-card {
+      background: white;
+      width: 380px;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+
+    .login-card h2 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .login-card p {
+      text-align: center;
+      color: #666;
+      margin-bottom: 25px;
+    }
+
+    label {
+      font-weight: 600;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 18px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 15px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #0d6efd;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    button:hover {
+      background: #0b5ed7;
+    }
+
+    .error {
+      color: #dc3545;
+      text-align: center;
+      margin-top: 12px;
+      display: none;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 13px;
+      color: #777;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="login-card">
+  <h2>🩺 Doctor Login</h2>
+  <p>Secure access to patient vitals</p>
+
+  <label>Username</label>
+  <input id="username" placeholder="Enter username">
+
+  <label>Password</label>
+  <input id="password" type="password" placeholder="Enter password">
+
+  <button onclick="login()">Login</button>
+
+  <div class="error" id="errorMsg">Invalid credentials</div>
+
+  <footer>
+    Healthcare Monitoring System
+  </footer>
+</div>
+
+<script>
+/* 🚀 AUTO REDIRECT IF ALREADY LOGGED IN */
+(function () {
+  if (localStorage.getItem("access_token")) {
+    window.location.href = "/dashboard/doctor/";
+  }
+})();
+
+function login() {
+  const error = document.getElementById("errorMsg");
+  error.style.display = "none";
+
+  fetch("/api/accounts/login/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      username: document.getElementById("username").value,
+      password: document.getElementById("password").value
+    })
+  })
+  .then(res => {
+    if (!res.ok) throw new Error();
+    return res.json();
+  })
+  .then(data => {
+    localStorage.setItem("access_token", data.access);
+    window.location.href = "/dashboard/doctor/";
+  })
+  .catch(() => {
+    error.style.display = "block";
+  });
+}
+</script>
+
+</body>
+</html>

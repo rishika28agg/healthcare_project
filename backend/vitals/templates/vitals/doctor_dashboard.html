@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Doctor Dashboard</title>
+
+  <style>
+    /* ===== BACKGROUND ===== */
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: linear-gradient(135deg, #edf3ff, #f9fcff);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ECG LINE */
+    .ecg {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      width: 200%;
+      height: 120px;
+      background: repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 20px,
+        rgba(13,110,253,0.15) 22px
+      );
+      animation: moveECG 6s linear infinite;
+      opacity: 0.4;
+    }
+
+    @keyframes moveECG {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+
+    /* FLOATING MEDICAL DOTS */
+    .dot {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: rgba(13,110,253,0.2);
+      border-radius: 50%;
+      animation: float 12s infinite ease-in-out;
+    }
+
+    @keyframes float {
+      0% { transform: translateY(0); opacity: 0.2; }
+      50% { transform: translateY(-40px); opacity: 0.5; }
+      100% { transform: translateY(0); opacity: 0.2; }
+    }
+
+    /* ===== DASHBOARD CARD ===== */
+    .dashboard {
+      position: relative;
+      width: 900px;
+      background: #ffffff;
+      border-radius: 18px;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.15);
+      padding: 35px 40px;
+      z-index: 2;
+    }
+
+    header {
+      font-size: 26px;
+      font-weight: 600;
+      color: #0d6efd;
+      margin-bottom: 30px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card {
+      background: #f8fbff;
+      border-radius: 14px;
+      padding: 25px;
+      margin-bottom: 30px;
+      border: 1px solid #e3ecff;
+    }
+
+    .card h3 {
+      margin-top: 0;
+      margin-bottom: 18px;
+      color: #0d6efd;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+    }
+
+    input {
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccd9ff;
+      width: 220px;
+    }
+
+    button {
+      padding: 12px 26px;
+      background: #0d6efd;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    button:hover {
+      background: #0b5ed7;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    th {
+      background: #eef4ff;
+      padding: 14px;
+      text-align: center;
+      font-weight: 600;
+      border-bottom: 2px solid #dbe6ff;
+    }
+
+    td {
+      padding: 14px;
+      text-align: center;
+      border-bottom: 1px solid #eee;
+    }
+
+    .badge {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 14px;
+      display: inline-block;
+    }
+
+    .normal { background: #d1e7dd; color: #0f5132; }
+    .warning { background: #fff3cd; color: #664d03; }
+    .danger { background: #f8d7da; color: #842029; }
+
+    footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 14px;
+      color: #777;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- LIVE BACKGROUND ELEMENTS -->
+<div class="ecg"></div>
+<div class="dot" style="top:20%; left:15%;"></div>
+<div class="dot" style="top:60%; left:25%;"></div>
+<div class="dot" style="top:40%; left:70%;"></div>
+<div class="dot" style="top:75%; left:85%;"></div>
+
+<div class="dashboard">
+
+  <header>
+    🏥 Doctor Dashboard
+  </header>
+
+  <div class="card">
+    <h3>Patient Lookup</h3>
+    <div class="form-row">
+      <input type="number" id="patientId" value="1" placeholder="Patient ID">
+      <button onclick="fetchVitals()">View Patient</button>
+    </div>
+  </div>
+
+  <div class="card" id="tableCard" style="display:none;">
+    <h3>Patient Vitals</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Heart Rate</th>
+          <th>SpO₂</th>
+          <th>Temperature (°F)</th>
+          <th>Timestamp</th>
+        </tr>
+      </thead>
+      <tbody id="body"></tbody>
+    </table>
+  </div>
+
+  <footer>
+    Secure Healthcare Monitoring System
+  </footer>
+
+</div>
+
+<script>
+/* 🔐 AUTO LOGIN CHECK */
+(function () {
+  const token = localStorage.getItem("access_token");
+  if (!token) window.location.href = "/login/doctor/";
+})();
+
+function badge(value, type) {
+  if (type === "spo2") {
+    if (value < 90) return "danger";
+    if (value < 95) return "warning";
+    return "normal";
+  }
+  if (type === "hr") {
+    if (value < 60 || value > 100) return "warning";
+    return "normal";
+  }
+  return "normal";
+}
+
+function fetchVitals() {
+  const token = localStorage.getItem("access_token");
+  const patientId = document.getElementById("patientId").value;
+
+  fetch(`/api/vitals/doctor/${patientId}/`, {
+    headers: { "Authorization": "Bearer " + token }
+  })
+  .then(res => res.json())
+  .then(data => {
+    const body = document.getElementById("body");
+    body.innerHTML = "";
+
+    data.forEach(v => {
+      body.innerHTML += `
+        <tr>
+          <td><span class="badge ${badge(v.heart_rate,'hr')}">${v.heart_rate}</span></td>
+          <td><span class="badge ${badge(v.spo2,'spo2')}">${v.spo2}%</span></td>
+          <td>${v.body_temperature.toFixed(1)}</td>
+          <td>${new Date(v.timestamp).toLocaleString()}</td>
+        </tr>
+      `;
+    });
+
+    document.getElementById("tableCard").style.display = "block";
+  });
+}
+</script>
+
+</body>
+</html>

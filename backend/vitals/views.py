@@ -1,6 +1,17 @@
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view,permission_classes
 from rest_framework.response import Response
 from vitals.models import PatientVital
+from rest_framework.permissions import IsAuthenticated
+
+from .models import PatientVital, DoctorPatientMap
+from django.shortcuts import render
+
+
+def doctor_login_page(request):
+    return render(request, "vitals/doctor_login.html")
+
+def doctor_dashboard(request):
+    return render(request, "vitals/doctor_dashboard.html")
 
 @api_view(["GET"])
 def get_patient_data(request, patient_id):
@@ -16,6 +27,7 @@ def get_patient_data(request, patient_id):
         })
 
     return Response(data)
+
 
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -55,3 +67,25 @@ def verify_record(request, record_id):
             status=404
         )
 
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def patient_view_self(request):
+
+    if request.user.userprofile.role != "PATIENT":
+        return Response({"error": "Forbidden"}, status=403)
+
+    # IMPORTANT: patient_id must be an INTEGER
+    data = PatientVital.objects.filter(patient_id=request.user.id)
+    return Response(list(data.values()))
+
+
+# vitals/views.py
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def doctor_view_patient(request, patient_id):
+
+    if request.user.userprofile.role != "DOCTOR":
+        return Response({"error": "Forbidden"}, status=403)
+
+    data = PatientVital.objects.filter(patient_id=patient_id)
+    return Response(list(data.values()))
