@@ -34,14 +34,9 @@ class UserProfile(models.Model):
 
     role = models.CharField(max_length=10, choices=ROLE_CHOICES)
 
-    access_key = models.CharField(max_length=32, unique=True)
+    access_key = models.CharField(max_length=32, unique=True, blank=True, null=True)
 
-    patient_id = models.IntegerField(null=True, blank=True)   # ADD THIS
-
-    def save(self, *args, **kwargs):
-        if not self.access_key:
-            self.access_key = secrets.token_hex(8)
-        super().save(*args, **kwargs)
+    patient_id = models.IntegerField(null=True, blank=True, unique=True)   # UNIQUE constraint added
 
 class DoctorPatient(models.Model):
 
